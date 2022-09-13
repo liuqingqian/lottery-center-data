@@ -37,16 +37,16 @@ spring:
           password: 123456
           driver-class-name: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://127.0.0.1:3306/lottery_center?useUnicode=true&autoReconnect=true
-  redis:
-    database: 0
-    host: 192.168.2.222
-    port: 6379
-    #    password: It0SVN8R7BZYpJHl
-    lettuce:
-      pool:
-        max-active: 100
-        min-idle: 20
-        max-idle: 50
+#  redis:
+#    database: 0
+#    host: 192.168.2.222
+#    port: 6379
+#    #    password: It0SVN8R7BZYpJHl
+#    lettuce:
+#      pool:
+#        max-active: 100
+#        min-idle: 20
+#        max-idle: 50
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
