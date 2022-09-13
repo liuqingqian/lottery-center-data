@@ -49,4 +49,17 @@ public enum LotSizeEnum {
         }
         return null;
     }
+
+    public static LotSizeEnum fromDesc(String desc) {
+        if (Objects.isNull(desc)) {
+            return null;
+        }
+        LotSizeEnum[] values = values();
+        for (LotSizeEnum item : values) {
+            if (item.getDesc().equals(desc)) {
+                return item;
+            }
+        }
+        return null;
+    }
 }

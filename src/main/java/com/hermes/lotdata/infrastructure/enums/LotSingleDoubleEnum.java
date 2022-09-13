@@ -50,4 +50,17 @@ public enum LotSingleDoubleEnum {
         }
         return null;
     }
+
+    public static LotSingleDoubleEnum fromDesc(String desc) {
+        if (Objects.isNull(desc)) {
+            return null;
+        }
+        LotSingleDoubleEnum[] values = values();
+        for (LotSingleDoubleEnum item : values) {
+            if (item.getDesc().equals(desc)) {
+                return item;
+            }
+        }
+        return null;
+    }
 }

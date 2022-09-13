@@ -6,13 +6,16 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.beicai.common.DateTimeUtil;
 import com.google.common.collect.Lists;
 import com.hermes.lotdata.domain.dto.LotRecordDTO;
+import com.hermes.lotdata.domain.rpc.response.LotteryLastResponse;
 import com.hermes.lotdata.entity.LotteryRecordEntity;
 import com.hermes.lotdata.infrastructure.enums.LotSingleDoubleEnum;
 import com.hermes.lotdata.infrastructure.enums.LotSizeEnum;
+import com.hermes.lotdata.infrastructure.enums.LotStatusEnum;
 import com.hermes.lotdata.repository.LotteryRecordMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
@@ -28,6 +31,18 @@ import java.util.Objects;
 @Component
 public class LotteryRecordDomain extends ServiceImpl<LotteryRecordMapper, LotteryRecordEntity> {
 
+
+    @Autowired
+    private LotteryHaoMaDomain lotteryHaoMaDomain;
+
+
+    public int insert(LotteryRecordEntity lotteryRecordEntity) {
+
+        if (Objects.isNull(lotteryRecordEntity)) {
+            return 0;
+        }
+        return baseMapper.insert(lotteryRecordEntity);
+    }
 
     public boolean batchInsert(List<LotteryRecordEntity> lotteryRecordEntities) {
         if (CollectionUtils.isEmpty(lotteryRecordEntities)) {
@@ -46,6 +61,18 @@ public class LotteryRecordDomain extends ServiceImpl<LotteryRecordMapper, Lotter
         queryWrapper.last("LIMIT 1");
 
         return baseMapper.selectOne(queryWrapper);
+    }
+
+    public List<LotteryRecordEntity> queryListByPeriodNumber(String code, List<String> periodNumbers) {
+        if (StringUtils.isBlank(code) || CollectionUtils.isEmpty(periodNumbers)) {
+            return Lists.newArrayList();
+        }
+
+        LambdaQueryWrapper<LotteryRecordEntity> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(LotteryRecordEntity::getCode, code);
+        queryWrapper.in(LotteryRecordEntity::getPeriodNumber, periodNumbers);
+
+        return baseMapper.selectList(queryWrapper);
     }
 
     public List<LotteryRecordEntity> queryListByDate(String code, String startDate) {
@@ -126,6 +153,51 @@ public class LotteryRecordDomain extends ServiceImpl<LotteryRecordMapper, Lotter
         }
         //豹@0:否@1:是
         recordEntity.setEquals(lotRecordDTO.getIsEquals() ? 1 : 0);
+        return recordEntity;
+    }
+
+
+    public LotteryRecordEntity toLotteryRecordEntity(LotteryLastResponse.Last last) {
+
+        if (Objects.isNull(last)) {
+            return null;
+        }
+        String lotteryHaoMa = last.getHaoMa();
+        List<Integer> dices = lotteryHaoMaDomain.convertToDices(lotteryHaoMa);
+        if (CollectionUtils.isEmpty(dices)) {
+            return null;
+        }
+
+        LotteryRecordEntity recordEntity = new LotteryRecordEntity();
+        recordEntity.setCode(last.getLotCode());
+        recordEntity.setPeriodNumber(last.getQiHao());
+        //开奖时间
+        String openTime = DateTimeUtil.queryByTimestamp(last.getOpenTime()).format(DateTimeUtil.yyyy_MM_dd_HH_mm_ss);
+        recordEntity.setLotTime(openTime);
+        Integer dice1 = dices.get(0);
+        Integer dice2 = dices.get(1);
+        Integer dice3 = dices.get(2);
+        recordEntity.setDice1(dice1);
+        recordEntity.setDice2(dice2);
+        recordEntity.setDice3(dice3);
+        recordEntity.setSum(dice1 + dice2 + dice3);
+        boolean isDual = Objects.equals(dice1, dice2) && Objects.equals(dice2, dice3);
+        //豹@0:否@1:是
+        recordEntity.setEquals(isDual ? 1 : 0);
+        if (isDual) {
+            recordEntity.setSize(LotSizeEnum.DUAL.getCode());
+            recordEntity.setSingleDouble(LotSingleDoubleEnum.DUAL.getCode());
+        } else {
+            //大小
+            String sizeSidedName = lotteryHaoMaDomain.convertSizeSidedName(lotteryHaoMa);
+            LotSizeEnum lotSizeEnum = LotSizeEnum.fromDesc(sizeSidedName);
+            recordEntity.setSize(lotSizeEnum.getCode());
+            //单双
+            String singleDoubleSidedName = lotteryHaoMaDomain.convertSingleDoubleSidedName(lotteryHaoMa);
+            LotSingleDoubleEnum lotSingleDoubleEnum = LotSingleDoubleEnum.fromDesc(singleDoubleSidedName);
+            recordEntity.setSingleDouble(lotSingleDoubleEnum.getCode());
+        }
+        recordEntity.setLotStatus(LotStatusEnum.HAS_LOT.getCode());
         return recordEntity;
     }
 
