@@ -10,6 +10,7 @@ import com.hermes.lotdata.domain.LotteryRecordRefreshDomain;
 import com.hermes.lotdata.domain.rpc.response.LotteryLastResponse;
 import com.hermes.lotdata.domain.rpc.response.LotteryOptResponse;
 import com.hermes.lotdata.entity.LotteryRecordEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by liuqingqian on 2022/9/14.
  */
+@Slf4j
 @Component
 public class LotteryRecordLastRefreshTask {
 
@@ -38,7 +40,7 @@ public class LotteryRecordLastRefreshTask {
     @Scheduled(cron = "5 * * * * ?")
     public void refreshTask() {
         String code = "FFK3";
-        System.out.println("[LastRefreshTask]触发时间 = " + DateTimeUtil.nowStr());
+        log.info("[LastRefreshTask]触发时间 = " + DateTimeUtil.nowStr());
         ifNeedFileRefreshRecord(code);
         LotteryOptResponse lotteryOptResponse = lotteryRecordNetDomain.lotteryOpt(code);
         if (Objects.nonNull(lotteryOptResponse) && lotteryOptResponse.isSuccess()) {
@@ -51,7 +53,7 @@ public class LotteryRecordLastRefreshTask {
                     LotteryLastResponse.Last lastDetail = lotteryLastResponse.getLast();
                     LotteryRecordEntity lotteryRecordEntity = lotteryRecordDomain.toLotteryRecordEntity(lastDetail);
                     int insert = lotteryRecordDomain.insert(lotteryRecordEntity);
-                    System.out.println("lotteryRecordEntity = " + lotteryRecordEntity + ",insert = " + insert);
+                    log.info("lotteryRecordEntity = " + lotteryRecordEntity + ",insert = " + insert);
                 }
             }
         }
@@ -63,7 +65,7 @@ public class LotteryRecordLastRefreshTask {
         Boolean ifPresent = refreshRecordGuavaCache.getIfPresent(cacheKey);
         if (Objects.isNull(ifPresent)) {
             LotteryRecordRefreshVO lotteryRecordRefreshVO = lotteryRecordRefreshDomain.refreshTask(code, date);
-            System.out.println("[NeedFileRefresh] = " + lotteryRecordRefreshVO);
+            log.info("[NeedFileRefresh] = " + lotteryRecordRefreshVO);
             refreshRecordGuavaCache.put(cacheKey, true);
         }
     }
